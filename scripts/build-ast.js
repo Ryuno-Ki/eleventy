@@ -12,7 +12,9 @@ const cliScripts = [
   'cmd.js',
 ];
 const espreeOptions = {
-  ecmaVersion: 6,
+  // Minimum version required for async methods
+  // c.f. https://stackoverflow.com/a/41918319
+  ecmaVersion: 8,
 };
 const dependencyMap = {};
 let filesToAnalyse = [];
@@ -45,7 +47,6 @@ async function step (currentFile) {
     const content = await extractContent(nextStep);
     const { ast, filePath } = parseCode(content);
     extractNextFiles(ast, filePath);
-    //await walkDirectory(nextStep);
   } catch (exc) {
     console.error(`Error in ${currentFile}:`, exc);
   }
@@ -202,6 +203,9 @@ function walkTree (nodes) {
       case 'AssignmentExpression':
         handleAssignmentExpression(node);
         break;
+      case 'AwaitExpression':
+        handleAwaitExpression(node);
+        break;
       case 'BinaryExpression':
         handleBinaryExpression(node);
         break;
@@ -223,14 +227,23 @@ function walkTree (nodes) {
       case 'ConditionalExpression':
         handleConditionalExpression(node);
         break;
+      case 'ContinueStatement':
+        handleContinueStatement(node);
+        break;
       case 'ExpressionStatement':
         handleExpressionStatement(node);
+        break;
+      case 'ForStatement':
+        handleForStatement(node);
         break;
       case 'ForInStatement':
         handleForInStatement(node);
         break;
       case 'ForOfStatement':
         handleForOfStatement(node);
+        break;
+      case 'FunctionDeclaration':
+        handleFunctionDeclaration(node);
         break;
       case 'FunctionExpression':
         handleFunctionExpression(node);
@@ -262,8 +275,14 @@ function walkTree (nodes) {
       case 'Property':
         handleProperty(node);
         break;
+      case 'RestElement':
+        handleRestElement(node);
+        break;
       case 'ReturnStatement':
         handleReturnStatement(node);
+        break;
+      case 'SpreadElement':
+        handleSpreadElement(node);
         break;
       case 'Super':
         handleSuper(node);
@@ -285,6 +304,9 @@ function walkTree (nodes) {
         break;
       case 'UnaryExpression':
         handleUnaryExpression(node);
+        break;
+      case 'UpdateExpression':
+        handleUpdateExpression(node);
         break;
       case 'VariableDeclaration':
         handleVariableDeclaration(node);
@@ -328,6 +350,15 @@ function handleArrowFunctionExpression (node) {
 function handleAssignmentExpression (node) {
   walkTree([node.left]);
   walkTree([node.right]);
+}
+
+/**
+ * Triggers a walk over the thing being awaited.
+ *
+ * @param {AwaitExpression} node
+ */
+function handleAwaitExpression (node) {
+  walkTree([node.argument]);
 }
 
 /**
@@ -407,12 +438,32 @@ function handleConditionalExpression (node) {
 }
 
 /**
+ * Do nothing with a continue statement.
+ *
+ * @param {ContinueStatement) node
+ */
+function handleContinueStatement (node) {
+}
+
+/**
  * Walks over an expression statement.
  *
  * @param {ExpressionStatement} node
  */
 function handleExpressionStatement (node) {
   walkTree([node.expression]);
+}
+
+/**
+ * Triggers a walk over the head and body of a for loop.
+ *
+ * @param {ForInStatement} node
+ */
+function handleForStatement (node) {
+  walkTree([node.init]);
+  walkTree([node.test]);
+  walkTree([node.update]);
+  walkTree([node.body]);
 }
 
 /**
@@ -434,6 +485,17 @@ function handleForInStatement (node) {
 function handleForOfStatement (node) {
   walkTree([node.left]);
   walkTree([node.right]);
+  walkTree([node.body]);
+}
+
+/**
+ * Walks over the id, params and body of a function declaration.
+ *
+ * @param {FunctionDeclaration} node
+ */
+function handleFunctionDeclaration (node) {
+  walkTree([node.id]);
+  walkTree(node.params);
   walkTree([node.body]);
 }
 
@@ -544,6 +606,24 @@ function handleReturnStatement (node) {
 }
 
 /**
+ * Walks over the rest argument.
+ *
+ * @param {RestElement} node
+ */
+function handleRestElement (node) {
+  walkTree([node.argument]);
+}
+
+/**
+ * Walks over the element being spread
+ *
+ * @param {SpreadElement} node
+ */
+function handleSpreadElement (node) {
+  walkTree([node.argument]);
+}
+
+/**
  * Does nothing with a super call.
  *
  * @param {Super} node
@@ -606,6 +686,15 @@ function handleTryStatement (node) {
  * @param {UnaryExpression} node
  */
 function handleUnaryExpression (node) {
+  walkTree([node.argument]);
+}
+
+/**
+ * Triggers a walk over the argument being updated.
+ *
+ * @param {UpdateExpression} node
+ */
+function handleUpdateExpression (node) {
   walkTree([node.argument]);
 }
 
