@@ -6,6 +6,7 @@ const { promisify } = require('es6-promisify');
 
 const readdir = promisify(fs.readdir);
 const readFile = promisify(fs.readFile);
+const writeFile = promisify(fs.writeFile);
 
 const srcRoot = path.resolve(__dirname, '..');
 const cliScripts = [
@@ -32,7 +33,7 @@ async function main () {
     await step(currentFile);
     currentFile = getNextFile();
   }
-  console.log(dependencyMap);
+  return writeMermaidDiagram();
 }
 
 /**
@@ -751,6 +752,28 @@ function isRequireCall (node) {
     }
   }
   return isRequire && isLocalRef;
+}
+
+async function writeMermaidDiagram () {
+  const diagramLines = Object
+    .keys(dependencyMap)
+    .map((key) => {
+      const values = dependencyMap[key];
+      const lhs = path.basename(key, '.js').toUpperCase();
+      const lines = values
+        .filter((value) => !value.endsWith('.json'))
+        .map((value) => {
+          const rhs = path.basename(value, '.js').toUpperCase();
+          return `\t${lhs} <|-- ${rhs}`;
+        });
+      return [`class ${lhs}`].concat(lines).join('\n');
+    })
+    .map((line) => `\t${line}`)
+    .join('\n');
+  const diagram = `classDiagram\n${diagramLines}`;
+  const filePath = path.resolve(__dirname, 'dep.mermaid');
+  await writeFile(filePath, diagram);
+  console.log(`Written to ${filePath}`);
 }
 
 main();
