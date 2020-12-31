@@ -8,17 +8,31 @@ const aggregateBench = require("./BenchmarkManager").get("Aggregate");
 const debug = require("debug")("Eleventy:UserConfig");
 const pkg = require("../package.json");
 
+/**
+ * @module 11ty/Eleventy/UserConfig
+ */
+
+/**
+ * Custom Error for UserConfig
+ */
 class UserConfigError extends EleventyBaseError {}
 
 // API to expose configuration options in config file
 class UserConfig {
+  /**
+   * Initialises all members.
+   */
   constructor() {
     this.reset();
   }
 
+  /**
+   * Resets all members.
+   */
   reset() {
     debug("Resetting EleventyConfig to initial values.");
     this.events = new EventEmitter();
+    /** @type {Object<string, function>} */
     this.collections = {};
     this.templateFormats = undefined;
 
@@ -53,8 +67,10 @@ class UserConfig {
     this.dynamicPermalinks = true;
     this.useGitIgnore = true;
     this.dataDeepMerge = false;
+    /** @type {Set<Object<string, string>>} */
     this.extensionMap = new Set();
     this.watchJavaScriptDependencies = true;
+    /** @type {Array<string>} */
     this.additionalWatchTargets = [];
     this.browserSyncConfig = {};
     this.globalData = {};
@@ -62,11 +78,18 @@ class UserConfig {
     this.watchThrottleWaitTime = 0; //ms
 
     // using Map to preserve insertion order
+    /** @type {Map<string, function>} */
     this.dataExtensions = new Map();
 
     this.quietMode = false;
   }
 
+  /**
+   * Checks installed Eleventy version against expected.
+   *
+   * @param {string} expected
+   * @throws {UserConfigError}
+   */
   versionCheck(expected) {
     if (!semver.satisfies(pkg.version, expected)) {
       throw new UserConfigError(
@@ -75,24 +98,49 @@ class UserConfig {
     }
   }
 
-  // Duplicate event bindings are avoided with the `reset` method above.
-  // A new EventEmitter instance is created when the config is reset.
+  /**
+   * Duplicate event bindings are avoided with the `reset` method above.
+   * A new EventEmitter instance is created when the config is reset.
+   *
+   * @param {string} eventName The event to listen on
+   * @param {function} callback The function to call on event
+   */
   on(eventName, callback) {
     return this.events.on(eventName, callback);
   }
 
+  /**
+   * Emit a new event of given name with these arguments.
+   *
+   * @param {string} eventName
+   * @param  {...any} args
+   * @returns {Promise<*>|undefined}
+   * @todo Better type annotation for return value
+   */
   emit(eventName, ...args) {
     return this.events.emit(eventName, ...args);
   }
 
-  // This is a method for plugins, probably shouldn’t use this in projects.
-  // Projects should use `setLibrary` as documented here:
-  // https://github.com/11ty/eleventy/blob/master/docs/engines/markdown.md#use-your-own-options
+  /**
+   * This is a method for plugins, probably shouldn’t use this in projects.
+   * Projects should use `setLibrary` as documented here:
+   * https://github.com/11ty/eleventy/blob/master/docs/engines/markdown.md#use-your-own-options
+   *
+   * @param {function} highlightFn Markdown highlighter function to use
+   * @todo Link to 11ty.dev/docs page?
+   */
   addMarkdownHighlighter(highlightFn) {
     this.markdownHighlighter = highlightFn;
   }
 
-  // tagCallback: function(liquidEngine) { return { parse: …, render: … }} };
+  /**
+   * Registers a new liquid.js tag.
+   * tagCallback: function(liquidEngine) { return { parse: …, render: … }} };
+   *
+   * @param {string} name
+   * @param {function} tagFn
+   * @throws {UserConfigError}
+   */
   addLiquidTag(name, tagFn) {
     name = this.getNamespacedName(name);
 
@@ -113,6 +161,12 @@ class UserConfig {
     this.liquidTags[name] = bench.add(`"${name}" Liquid Custom Tag`, tagFn);
   }
 
+  /**
+   * Registers a new liquid.js filter
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addLiquidFilter(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -128,6 +182,12 @@ class UserConfig {
     this.liquidFilters[name] = bench.add(`"${name}" Liquid Filter`, callback);
   }
 
+  /**
+   * Registers a new async nunjucks filter.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addNunjucksAsyncFilter(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -146,7 +206,13 @@ class UserConfig {
     );
   }
 
-  // Support the nunjucks style syntax for asynchronous filter add
+  /**
+   * Support the nunjucks style syntax for asynchronous filter add
+   *
+   * @param {string} name
+   * @param {function} callback
+   * @param {boolean} isAsync
+   */
   addNunjucksFilter(name, callback, isAsync = false) {
     if (isAsync) {
       // namespacing happens downstream
@@ -170,6 +236,12 @@ class UserConfig {
     }
   }
 
+  /**
+   * Registers a new handlebars helper
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addHandlebarsHelper(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -188,6 +260,12 @@ class UserConfig {
     );
   }
 
+  /**
+   * Registers a new universal filter.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addFilter(name, callback) {
     debug("Adding universal filter %o", this.getNamespacedName(name));
 
@@ -200,6 +278,13 @@ class UserConfig {
     this.addHandlebarsHelper(name, callback);
   }
 
+  /**
+   * Looks up a filter by name.
+   * Order: JS > Nunjucks > Liquid > Handlebars
+   *
+   * @param {string} name
+   * @return {function|undefined}
+   */
   getFilter(name) {
     return (
       this.javascriptFunctions[name] ||
@@ -209,6 +294,13 @@ class UserConfig {
     );
   }
 
+  /**
+   * Registers a new Nunjucks tag.
+   *
+   * @param {string} name
+   * @param {function} tagFn
+   * @throws {UserConfigError}
+   */
   addNunjucksTag(name, tagFn) {
     name = this.getNamespacedName(name);
 
@@ -230,12 +322,25 @@ class UserConfig {
     this.nunjucksTags[name] = bench.add(`"${name}" Nunjucks Custom Tag`, tagFn);
   }
 
+  /**
+   * Registers new global data.
+   *
+   * @param {string} name
+   * @param {*} data
+   * @returns {this}
+   */
   addGlobalData(name, data) {
     name = this.getNamespacedName(name);
     this.globalData[name] = data;
     return this;
   }
 
+  /**
+   * Registers a new Nunjucks global.
+   *
+   * @param {string} name
+   * @param {function} globalFn
+   */
   addNunjucksGlobal(name, globalFn) {
     name = this.getNamespacedName(name);
 
@@ -254,27 +359,56 @@ class UserConfig {
     );
   }
 
+  /**
+   * Registers a new transform function.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addTransform(name, callback) {
     name = this.getNamespacedName(name);
 
     this.transforms[name] = callback;
   }
 
+  /**
+   * Registers a new linter.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addLinter(name, callback) {
     name = this.getNamespacedName(name);
 
     this.linters[name] = callback;
   }
 
+  /**
+   * Registers a layout alias.
+   *
+   * @param {string} from
+   * @param {string} to
+   */
   addLayoutAlias(from, to) {
     this.layoutAliases[from] = to;
   }
 
-  // get config defined collections
+  /**
+   * get config defined collections
+   *
+   * @returns {Object<string, function>}
+   */
   getCollections() {
     return this.collections;
   }
 
+  /**
+   * Registers a new collection.
+   *
+   * @param {string} name
+   * @param {function} callback
+   * @throws {UserConfigError}
+   */
   addCollection(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -287,6 +421,13 @@ class UserConfig {
     this.collections[name] = callback;
   }
 
+  /**
+   * Registers a new plugin.
+   *
+   * @param {function|*} plugin
+   * @param {*} options
+   * @throws {UserConfigError}
+   */
   addPlugin(plugin, options) {
     // TODO support function.name in plugin config functions
     debug("Adding plugin (unknown name: check your config file).");
@@ -311,10 +452,22 @@ class UserConfig {
     }
   }
 
+  /**
+   * Registers a new namespace.
+   *
+   * @param {string} name
+   * @returns {string}
+   */
   getNamespacedName(name) {
     return this.activeNamespace + name;
   }
 
+  /**
+   * Temporarily sets the namespace to the pluginNamespace.
+   *
+   * @param {string} pluginNamespace
+   * @param {function} callback
+   */
   namespace(pluginNamespace, callback) {
     let validNamespace = pluginNamespace && typeof pluginNamespace === "string";
     if (validNamespace) {
@@ -347,6 +500,13 @@ class UserConfig {
     return this;
   }
 
+  /**
+   * Normalize template formats.
+   *
+   * @private
+   * @param {string|Array<string>} templateFormats
+   * @returns {Array<string>}
+   */
   _normalizeTemplateFormats(templateFormats) {
     if (typeof templateFormats === "string") {
       templateFormats = templateFormats
@@ -356,13 +516,24 @@ class UserConfig {
     return templateFormats;
   }
 
+  /**
+   * Sets the template formats.
+   *
+   * @param {string|Array<string>} templateFormats
+   */
   setTemplateFormats(templateFormats) {
     this.templateFormats = this._normalizeTemplateFormats(templateFormats);
   }
 
-  // additive, usually for plugins
+  /**
+   * additive, usually for plugins
+   *
+   * @param {string|Array<string>} templateFormats
+   */
   addTemplateFormats(templateFormats) {
     if (!this.templateFormatsAdded) {
+      // TODO: Should this be initialised in constructor?
+      /** @type {Array<string>} */
       this.templateFormatsAdded = [];
     }
     this.templateFormatsAdded = this.templateFormatsAdded.concat(
@@ -370,6 +541,12 @@ class UserConfig {
     );
   }
 
+  /**
+   * Sets the method to run the template engine.
+   *
+   * @param {string} engineName
+   * @param {function} libraryInstance
+   */
   setLibrary(engineName, libraryInstance) {
     // Pug options are passed to `compile` and not in the library constructor so we don’t need to warn
     if (engineName === "liquid" && this.mdOptions) {
@@ -381,26 +558,57 @@ class UserConfig {
     this.libraryOverrides[engineName.toLowerCase()] = libraryInstance;
   }
 
+  /**
+   * Sets options for Pug.
+   *
+   * @param {Object} options
+   */
   setPugOptions(options) {
     this.pugOptions = options;
   }
 
+  /**
+   * Sets options for Liquid.
+   *
+   * @param {Object} options
+   */
   setLiquidOptions(options) {
     this.liquidOptions = options;
   }
 
+  /**
+   * Sets options for EJS.
+   *
+   * @param {Object} options
+   */
   setEjsOptions(options) {
     this.ejsOptions = options;
   }
 
+  /**
+   * Allow dynamic permalinks?
+   *
+   * @param {boolean} enabled
+   */
   setDynamicPermalinks(enabled) {
     this.dynamicPermalinks = !!enabled;
   }
 
+  /**
+   * Respect .gitignore?
+   *
+   * @param {boolean} enabled
+   */
   setUseGitIgnore(enabled) {
     this.useGitIgnore = !!enabled;
   }
 
+  /**
+   * Adds a new universal shortcode to Nunjucks, Liquid, Handlebars and JS.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addShortcode(name, callback) {
     debug("Adding universal shortcode %o", this.getNamespacedName(name));
     this.addNunjucksShortcode(name, callback);
@@ -409,7 +617,12 @@ class UserConfig {
     this.addJavaScriptFunction(name, callback);
   }
 
-  // Undocumented method as a mitigation to reduce risk of #498
+  /**
+   * Undocumented method as a mitigation to reduce risk of #498
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addAsyncShortcode(name, callback) {
     debug("Adding universal async shortcode %o", this.getNamespacedName(name));
     this.addNunjucksAsyncShortcode(name, callback);
@@ -418,6 +631,12 @@ class UserConfig {
     // not supported in Handlebars
   }
 
+  /**
+   * Adds a new async shortcode for Nunjucks.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addNunjucksAsyncShortcode(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -436,6 +655,13 @@ class UserConfig {
     );
   }
 
+  /**
+   * Adds a new shortcode for Nunjucks.
+   *
+   * @param {string} name
+   * @param {function} callback
+   * @param {boolean} isAsync
+   */
   addNunjucksShortcode(name, callback, isAsync = false) {
     if (isAsync) {
       this.addNunjucksAsyncShortcode(name, callback);
@@ -458,6 +684,12 @@ class UserConfig {
     }
   }
 
+  /**
+   * Adds a new shortcode for Liquid.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addLiquidShortcode(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -476,6 +708,12 @@ class UserConfig {
     );
   }
 
+  /**
+   * Adds a new shortcode for Handlebars.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addHandlebarsShortcode(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -494,6 +732,12 @@ class UserConfig {
     );
   }
 
+  /**
+   * Adds new universal paired shortcode to Nunjucks, Liquid, Handlebars and JS.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addPairedShortcode(name, callback) {
     debug("Adding universal paired shortcode %o", this.getNamespacedName(name));
     this.addPairedNunjucksShortcode(name, callback);
@@ -502,7 +746,12 @@ class UserConfig {
     this.addJavaScriptFunction(name, callback);
   }
 
-  // Undocumented method as a mitigation to reduce risk of #498
+  /**
+   * Undocumented method as a mitigation to reduce risk of #498
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addPairedAsyncShortcode(name, callback) {
     debug(
       "Adding universal async paired shortcode %o",
@@ -514,6 +763,12 @@ class UserConfig {
     // not supported in Handlebars
   }
 
+  /**
+   * Adds new paired async shortcode to Nunjucks.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addPairedNunjucksAsyncShortcode(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -532,6 +787,13 @@ class UserConfig {
     );
   }
 
+  /**
+   * Adds new paired shortcode to Nunjucks.
+   *
+   * @param {string} name
+   * @param {function} callback
+   * @param {boolean} isAsync
+   */
   addPairedNunjucksShortcode(name, callback, isAsync = false) {
     if (isAsync) {
       this.addPairedNunjucksAsyncShortcode(name, callback);
@@ -554,6 +816,12 @@ class UserConfig {
     }
   }
 
+  /**
+   * Adds new paired shortcode to Liquid.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addPairedLiquidShortcode(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -572,6 +840,12 @@ class UserConfig {
     );
   }
 
+  /**
+   * Adds new paired shortcode to Handlebars.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addPairedHandlebarsShortcode(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -590,6 +864,12 @@ class UserConfig {
     );
   }
 
+  /**
+   * Adds new JavaScript function.
+   *
+   * @param {string} name
+   * @param {function} callback
+   */
   addJavaScriptFunction(name, callback) {
     name = this.getNamespacedName(name);
 
@@ -608,38 +888,84 @@ class UserConfig {
     );
   }
 
+  /**
+   * Deep merge data?
+   *
+   * @param {boolean} deepMerge
+   */
   setDataDeepMerge(deepMerge) {
     this.dataDeepMerge = !!deepMerge;
   }
 
+  /**
+   * Additional targets to watch for changes.
+   *
+   * @param {Array<string>} additionalWatchTargets
+   */
   addWatchTarget(additionalWatchTargets) {
     this.additionalWatchTargets.push(additionalWatchTargets);
   }
 
+  /**
+   * Watch changes in JavaScript dependencies?
+   *
+   * @param {boolean} watchEnabled
+   */
   setWatchJavaScriptDependencies(watchEnabled) {
     this.watchJavaScriptDependencies = !!watchEnabled;
   }
 
+  /**
+   * Set config for BrowserSync.
+   *
+   * @param {Object} options
+   */
   setBrowserSyncConfig(options = {}) {
     this.browserSyncConfig = options;
   }
 
+  /**
+   * Set config for Chokidar.
+   *
+   * @param {Object} options
+   */
   setChokidarConfig(options = {}) {
     this.chokidarConfig = options;
   }
 
+  /**
+   * Throttle wait time for watches.
+   *
+   * @param {number} time
+   */
   setWatchThrottleWaitTime(time = 0) {
     this.watchThrottleWaitTime = time;
   }
 
+  /**
+   * Options for frontmatter parsing
+   *
+   * @param {Object} options
+   */
   setFrontMatterParsingOptions(options = {}) {
     this.frontMatterParsingOptions = options;
   }
 
+  /**
+   * Be less verbose?
+   *
+   * @param {boolean} quietMode
+   */
   setQuietMode(quietMode) {
     this.quietMode = !!quietMode;
   }
 
+  /**
+   * Adds a new extension.
+   *
+   * @param {string} fileExtension
+   * @param {Object} options
+   */
   addExtension(fileExtension, options = {}) {
     if (!process.env.ELEVENTY_EXPERIMENTAL) {
       return;
@@ -662,10 +988,21 @@ class UserConfig {
     );
   }
 
+  /**
+   * Adds a new data extension with handler.
+   *
+   * @param {string} formatExtension
+   * @param {function} formatParser
+   */
   addDataExtension(formatExtension, formatParser) {
     this.dataExtensions.set(formatExtension, formatParser);
   }
 
+  /**
+   * Merges the config object to final one for Eleventy.
+   *
+   * @return {Object}
+   */
   getMergingConfigObject() {
     return {
       templateFormats: this.templateFormats,

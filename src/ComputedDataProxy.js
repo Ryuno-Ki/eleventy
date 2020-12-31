@@ -2,8 +2,17 @@ const lodashSet = require("lodash/set");
 const lodashGet = require("lodash/get");
 const lodashIsPlainObject = require("lodash/isPlainObject");
 
-/* Calculates computed data using Proxies */
+/**
+ * @module 11ty/eleventy/ComputedDataProxy
+ */
+
+/**
+ * Calculates computed data using Proxies
+ */
 class ComputedDataProxy {
+  /**
+   * @param {Array<string>|Set<string>} computedKeys The computed keys
+   */
   constructor(computedKeys) {
     if (Array.isArray(computedKeys)) {
       this.computedKeys = new Set(computedKeys);
@@ -12,10 +21,23 @@ class ComputedDataProxy {
     }
   }
 
+  /**
+   * Checks data on plain object or Array type.
+   *
+   * @param {*} data
+   * @return {boolean}
+   */
   isArrayOrPlainObject(data) {
     return Array.isArray(data) || lodashIsPlainObject(data);
   }
 
+  /**
+   * Get data by key reference.
+   *
+   * @param {*} data
+   * @param {Set<string>} keyRef
+   * @return {*}
+   */
   getProxyData(data, keyRef) {
     // Set defaults for keys not already set on parent data
     let undefinedValue = "__11TY_UNDEFINED__";
@@ -31,10 +53,24 @@ class ComputedDataProxy {
     return proxyData;
   }
 
+  /**
+   * Proxy an object.
+   *
+   * @param {Object} dataObj The original object to proxy.
+   * @param {Set<string>} keyRef
+   * @param {string} parentKey
+   * @return {*}
+   * @todo Better annotation for return type
+   */
   _getProxyForObject(dataObj, keyRef, parentKey = "") {
     return new Proxy(
       {},
       {
+        /**
+         * @param {Object<string, *>} obj
+         * @param {string} key
+         * @return {*}
+         */
         get: (obj, key) => {
           if (typeof key !== "string") {
             return obj[key];
@@ -50,6 +86,11 @@ class ComputedDataProxy {
             return new Proxy(
               {},
               {
+                /**
+                 * @param {Object<string, *>} obj
+                 * @param {string} key
+                 * @return {*}
+                 */
                 get: (target, key) => {
                   if (typeof key === "string") {
                     keyRef.add(`collections.${key}`);
@@ -71,8 +112,21 @@ class ComputedDataProxy {
     );
   }
 
+  /**
+   * tbd.
+   * @param {Array<*>} dataArr
+   * @param {Set<string>} keyRef
+   * @param {string} parentKey
+   * @return {*}
+   * @todo Better return type annotation
+   */
   _getProxyForArray(dataArr, keyRef, parentKey = "") {
     return new Proxy(new Array(dataArr.length), {
+      /**
+       * @param {Object<string, *>} obj
+       * @param {string} key
+       * @return {*}
+       */
       get: (obj, key) => {
         if (Array.prototype.hasOwnProperty(key)) {
           // remove `filter`, `constructor`, `map`, etc
@@ -96,6 +150,15 @@ class ComputedDataProxy {
     });
   }
 
+  /**
+   * tbd.
+   *
+   * @param {*} data
+   * @param {Set<string>} keyRef
+   * @param {string} parentKey
+   * @return {*}
+   * @todo Better return type annotation
+   */
   _getProxyData(data, keyRef, parentKey = "") {
     if (lodashIsPlainObject(data)) {
       return this._getProxyForObject(data, keyRef, parentKey);
@@ -107,7 +170,15 @@ class ComputedDataProxy {
     return data;
   }
 
+  /**
+   * tbd.
+   *
+   * @param {function} fn
+   * @param {Object} data
+   * @return {Promise<Array<*>>}
+   */
   async findVarsUsed(fn, data = {}) {
+    /** @type {Set<string>} */
     let keyRef = new Set();
 
     // careful, logging proxyData will mess with test results!

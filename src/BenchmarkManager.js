@@ -1,13 +1,25 @@
-const BenchmarkGroup = require("./BenchmarkGroup");
 const { performance } = require("perf_hooks");
 
+const BenchmarkGroup = require("./BenchmarkGroup");
+
+/**
+ * @module 11ty/eleventy/BenchmarkManager
+ */
+
+/**
+ * Manages instances of BenchmarkGroup
+ */
 class BenchmarkManager {
   constructor() {
+    /** @type {Object<string, BenchmarkGroup>} */
     this.benchmarkGroups = {};
     this.isVerbose = true;
     this.start = this.getNewTimestamp();
   }
 
+  /**
+   * Resets all BenchmarkGroups
+   */
   reset() {
     this.start = this.getNewTimestamp();
 
@@ -16,6 +28,11 @@ class BenchmarkManager {
     }
   }
 
+  /**
+   * Creates a new timestamp in milliseconds.
+   *
+   * @return number
+   */
   getNewTimestamp() {
     if (performance) {
       return performance.now();
@@ -23,10 +40,21 @@ class BenchmarkManager {
     return new Date().getTime();
   }
 
+  /**
+   * Sets the verbosity level.
+   *
+   * @param {boolean} isVerbose
+   */
   setVerboseOutput(isVerbose) {
     this.isVerbose = !!isVerbose;
   }
 
+  /**
+   * Get or creates a new BenchmarkGroup.
+   *
+   * @param {string} name The name of the BenchmarkGroup
+   * @return {BenchmarkGroup}
+   */
   getBenchmarkGroup(name) {
     if (!this.benchmarkGroups[name]) {
       this.benchmarkGroups[name] = new BenchmarkGroup();
@@ -43,10 +71,21 @@ class BenchmarkManager {
     return this.benchmarkGroups[name];
   }
 
+  /**
+   * Retrieves all BenchmarkGroups.
+   *
+   * @return {Object<string, BenchmarkGroup>}
+   */
   getAll() {
     return this.benchmarkGroups;
   }
 
+  /**
+   * Get one or many BenchmarkGroups.
+   *
+   * @param {string?} name The name of the BenchmarkGroup
+   * @return {BenchmarkGroup|Object<string, BenchmarkGroup>}
+   */
   get(name) {
     if (name) {
       return this.getBenchmarkGroup(name);
@@ -55,6 +94,9 @@ class BenchmarkManager {
     return this.getAll();
   }
 
+  /**
+   * Mark all BenchmarkGroups as finished.
+   */
   finish() {
     let totalTimeSpentBenchmarking = this.getNewTimestamp() - this.start;
     for (var j in this.benchmarkGroups) {

@@ -1,0 +1,27 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "declaration": true,
+        "declarationDir": "types",
+        "forceConsistentCasingInFileNames": true,
+        "importHelpers": true,
+        "lib": [
+            "es2017",
+            "DOM"
+        ],
+        "moduleResolution": "node",
+        "module": "esnext",
+        "noEmit": true,
+        "removeComments": true,
+        "resolveJsonModule": true,
+        "strict": true
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "include": [
+        "src/**/*.js",
+        "src/**/*.d.ts"
+    ]
+}

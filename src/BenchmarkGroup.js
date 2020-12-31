@@ -3,19 +3,37 @@ const chalk = require("chalk");
 const Benchmark = require("./Benchmark");
 const debugBenchmark = require("debug")("Eleventy:Benchmark");
 
+/**
+ * @module 11ty/eleventy/BenchmarkGroup
+ */
+
+/**
+ * Group instances of {@link 11ty/eleventy/Benchmark~Benchmark|Benchmark}s
+ */
 class BenchmarkGroup {
   constructor() {
+    /** @type {Object<string, Benchmark>} */
     this.benchmarks = {};
-    // Warning: aggregate benchmarks automatically default to false via BenchmarkManager->getBenchmarkGroup
+    /**
+     * Warning: aggregate benchmarks automatically default to false via BenchmarkManager->getBenchmarkGroup
+     */
     this.isVerbose = true;
     this.minimumThresholdMs = 0;
     this.minimumThresholdPercent = 8;
   }
 
+  /**
+   * Determines the new verbosity.
+   *
+   * @param {boolean} isVerbose
+   */
   setIsVerbose(isVerbose) {
     this.isVerbose = isVerbose;
   }
 
+  /**
+   * Resets all benchmarks.
+   */
   reset() {
     for (var type in this.benchmarks) {
       this.benchmarks[type].reset();
@@ -23,11 +41,19 @@ class BenchmarkGroup {
   }
 
   // TODO use addAsync everywhere instead
+  /**
+   *
+   * @param {string}   type Sets new Benchmark for this type
+   * @param {*} callback The code to benchmark
+   */
   add(type, callback) {
     let benchmark = (this.benchmarks[type] = new Benchmark());
 
+    // @ts-ignore
     return function (...args) {
       benchmark.before();
+      // TODO: What object `this` is pointing to here?
+      // @ts-ignore
       let ret = callback.call(this, ...args);
       benchmark.after();
       return ret;
@@ -47,6 +73,11 @@ class BenchmarkGroup {
   //   return promise;
   // }
 
+  /**
+   * Sets the minimum treshold in milliseconds.
+   *
+   * @param {string} minimumThresholdMs
+   */
   setMinimumThresholdMs(minimumThresholdMs) {
     let val = parseInt(minimumThresholdMs, 10);
     if (isNaN(val)) {
@@ -55,6 +86,11 @@ class BenchmarkGroup {
     this.minimumThresholdMs = val;
   }
 
+  /**
+   * Sets the minimum treshold in percent.
+   *
+   * @param {string} minimumThresholdPercent
+   */
   setMinimumThresholdPercent(minimumThresholdPercent) {
     let val = parseInt(minimumThresholdPercent, 10);
     if (isNaN(val)) {
@@ -65,6 +101,12 @@ class BenchmarkGroup {
     this.minimumThresholdPercent = val;
   }
 
+  /**
+   * Returns the benchmark for this type.
+   *
+   * @param {string} type
+   * @returns {Benchmark}
+   */
   get(type) {
     if (!this.benchmarks[type]) {
       this.benchmarks[type] = new Benchmark();
@@ -72,6 +114,12 @@ class BenchmarkGroup {
     return this.benchmarks[type];
   }
 
+  /**
+   * Report benchmark to STDOUT.
+   *
+   * @param {string} label
+   * @param {number} totalTimeSpent
+   */
   finish(label, totalTimeSpent) {
     for (var type in this.benchmarks) {
       let bench = this.benchmarks[type];

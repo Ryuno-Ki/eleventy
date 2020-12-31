@@ -1,21 +1,35 @@
 const urlFilter = require("./Filters/Url");
 const slugFilter = require("./Filters/Slug");
 const getCollectionItem = require("./Filters/GetCollectionItem");
+const TemplateConfig = require("./TemplateConfig");
 
+/**
+ * @module 11ty/eleventy/defaultConfig
+ */
+
+/**
+ * Generates the default config for Eleventy.
+ *
+ * @param {UserConfig} config
+ * @return {Object}
+ */
 module.exports = function (config) {
   config.addFilter("slug", slugFilter);
   config.addFilter("url", urlFilter);
   config.addFilter("log", console.log);
 
-  config.addFilter("getCollectionItem", (collection, page) =>
-    getCollectionItem(collection, page)
-  );
-  config.addFilter("getPreviousCollectionItem", (collection, page) =>
-    getCollectionItem(collection, page, -1)
-  );
-  config.addFilter("getNextCollectionItem", (collection, page) =>
-    getCollectionItem(collection, page, 1)
-  );
+  config.addFilter("getCollectionItem", (
+    /** @type {*} */ collection,
+    /** @type {*} */ page
+  ) => getCollectionItem(collection, page));
+  config.addFilter("getPreviousCollectionItem", (
+    /** @type {*} */ collection,
+    /** @type {*} */ page
+  ) => getCollectionItem(collection, page, -1));
+  config.addFilter("getNextCollectionItem", (
+    /** @type {*} */ collection,
+    /** @type {*} */ page
+  ) => getCollectionItem(collection, page, 1));
 
   return {
     templateFormats: [

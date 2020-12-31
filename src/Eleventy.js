@@ -28,27 +28,34 @@ const debug = require("debug")("Eleventy");
  *
  * @param {String} input - Where to read files from.
  * @param {String} output - Where to write rendered files to.
- * @returns {module:11ty/eleventy/Eleventy~Eleventy}
+ * @returns {Eleventy}
  */
 class Eleventy {
+  /**
+   * tbd.
+   *
+   * @param {*} input
+   * @param {*} output
+   * @param {Object} options
+   */
   constructor(input, output, options = {}) {
-    /** @member {module:11ty/eleventy/TemplateConfig~TemplateConfig~config} - TemplateConfig instance */
+    /** @member {Object} - TemplateConfig instance */
     this.config = config.getConfig();
 
     /**
-     * @member {String} - The path to Eleventy's config file.
+     * @member {string} - The path to Eleventy's config file.
      * @default null
      */
     this.configPath = null;
 
     /**
-     * @member {Boolean} - Was verbose mode overwritten?
+     * @member {boolean} - Was verbose mode overwritten?
      * @default false
      */
     this.verboseModeSetViaCommandLineParam = false;
 
     /**
-     * @member {Boolean} - Is Eleventy running in verbose mode?
+     * @member {boolean} - Is Eleventy running in verbose mode?
      * @default true
      */
     if (options.quietMode === true || options.quietMode === false) {

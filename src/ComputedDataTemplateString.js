@@ -1,12 +1,22 @@
 const lodashSet = require("lodash/set");
 const debug = require("debug")("Eleventy:ComputedDataTemplateString");
 
-/* Calculates computed data in Template Strings.
+/**
+ * @module 11ty/eleventy/ComputedDataTemplateString
+ */
+
+/**
+ * Calculates computed data in Template Strings.
  * Ideally we would use the Proxy approach but it doesn’t work
  * in some template languages that visit all available data even if
  * it isn’t used in the template (Nunjucks)
  */
 class ComputedDataTemplateString {
+  /**
+   * tbd.
+   *
+   * @param {Array<string>|Set<string>} computedKeys
+   */
   constructor(computedKeys) {
     if (Array.isArray(computedKeys)) {
       this.computedKeys = new Set(computedKeys);
@@ -20,6 +30,11 @@ class ComputedDataTemplateString {
     this.suffix = ")))))11ty)))))";
   }
 
+  /**
+   * Setup proxy data (?)
+   *
+   * @return {Object}
+   */
   getProxyData() {
     let proxyData = {};
 
@@ -34,6 +49,12 @@ class ComputedDataTemplateString {
     return proxyData;
   }
 
+  /**
+   * tbd.
+   *
+   * @param {string} output
+   * @returns {Array<string>}
+   */
   findVarsInOutput(output = "") {
     let vars = new Set();
     let splits = output.split(this.prefix);
@@ -46,6 +67,13 @@ class ComputedDataTemplateString {
     return Array.from(vars);
   }
 
+  /**
+   * tbd.
+   *
+   * @async
+   * @param {function} fn
+   * @return {Promise<Array<string>>}
+   */
   async findVarsUsed(fn) {
     let proxyData = this.getProxyData();
     let output;
